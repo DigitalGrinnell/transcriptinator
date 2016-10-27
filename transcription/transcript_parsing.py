@@ -10,8 +10,9 @@ output_file_time = 'only_timestamp.txt'
 # this is the folder you're keeping your source audio files in
 folder = 'mp3s'
 # this is the whole file path to the mp3 folder
-#path = '/Volumes/LIBSTU/AlumniOralHistories/TEST'
+# path = '/Volumes/LIBSTU/AlumniOralHistories/TEST'
 path = '/Users/loaner/transcriptinator/transcription/'
+
 
 def create_cues(root, speaker, beginning, ending, transcript_text):
     cue = etree.SubElement(root, 'cue')
@@ -23,11 +24,11 @@ def create_cues(root, speaker, beginning, ending, transcript_text):
     spkr.text = str(speaker)
     start.text = str(beginning)
     end.text = str(ending)
-   # t = remove_numbers(transcript_text)  # Removes occurences of word(x)
-    clean = transcript_text.replace("\xe2","'")  # Replaces character \xe2 with normal apostrophe
-    cleaner = clean.replace("(2)", "") # Removes (2) 's
-    cleanest = cleaner.replace("(3)", "") # Removes (3) 's
-    xmltext = re.sub(u"[^\x20-\x7f]+",u"",cleanest)  # Remove non-printable characters outside of given range
+    # t = remove_numbers(transcript_text)  # Removes occurences of word(x)
+    clean = transcript_text.replace("\xe2", "'")  # Replaces character \xe2 with normal apostrophe
+    cleaner = clean.replace("(2)", "")  # Removes (2) 's
+    cleanest = cleaner.replace("(3)", "")  # Removes (3) 's
+    xmltext = re.sub(u"[^\x20-\x7f]+", u"", cleanest)  # Remove non-printable characters outside of given range
     transcript.text = xmltext
 
 
@@ -60,8 +61,8 @@ def iterator(in_file):
     out_file = basefile + '_transcript.xml'
     with open(in_file) as transcriptfile:
         for line in transcriptfile:
-            #print(line)
-            #print(line[0])
+            # print(line)
+            # print(line[0])
             if '<speaker>' in line:
                 split_vals = line.split(">")
                 spk = split_vals[1]
@@ -78,28 +79,34 @@ def iterator(in_file):
 
             if test1 or test2:
                 # print(line)
-                split_vals = line.split()
-                # for the first word
+                # split_vals = line.split()
+
+                # Call our own function to parse the line.  If not as expected...continue to next line
+                split_vals = t_split(line)
+                if not split_vals:
+                    continue
+
+                # Found the first word
                 if count == 0:
                     # start a new list of words
                     transcript_words = []
                     # grab the start time of the first word
-                    start_time = (split_vals[1])
+                    start_time = split_vals[1]
                     # save the first word to the list
                     transcript_words.append(split_vals[0])
-                    count += 1	
+                    count += 1
                 elif line == '<speaker>':
                     # grab the stop time of the last word
-                    end_time = (split_vals[2])	
+                    end_time = split_vals[2]
                     # save the last word to the list
                     transcript_words.append(split_vals[0])
-                    # assemble the cue	
+                    # assemble the cue
                     create_cues(
                         root, speaker, start_time, end_time, " ".join(transcript_words))
                 # for the 120th word
                 elif count == 120:
                     # grab the stop time of the last word
-                    end_time = (split_vals[2])
+                    end_time = split_vals[2]
                     # save the last word to the list
                     transcript_words.append(split_vals[0])
                     # assemble the cue
@@ -112,13 +119,13 @@ def iterator(in_file):
                     count += 1
 
     # Once EOF is reached, create cue for the remaining part of transcription, even if it isn't 120 words long.
-    end_time = (split_vals[2])
+    end_time = split_vals[2]
     # save the last word to the list
     transcript_words.append(split_vals[0])
     # assemble the cue
     create_cues(
         root, speaker, start_time, end_time, " ".join(transcript_words))
-               
+
     tree = etree.ElementTree(root)
     tree.write(out_file, pretty_print=True,
                xml_declaration=True, encoding='UTF-8')
@@ -166,8 +173,8 @@ def make_folders(path):
             file_names(derivs_folder)
 
 
-# def remove_numbers(text_string):
-   # return re.sub(r'\W\d+\W', '', text_string)
+            # def remove_numbers(text_string):
+            # return re.sub(r'\W\d+\W', '', text_string)
 
 
 def scrape_text(in_file):
@@ -213,4 +220,13 @@ def store_xml(timestamps, out):
             f.write(timestamp_lines)
 
 
+# returns the first group in the regular expression
+def t_split(line):
+    pattern = r'([^|]+).\|.(\d+\.\d+).(\d+\.\d+).(0\.\d{6})'
+    result = re.match(pattern, line)
+    if (result):
+        return result.group()
+
+
+# main
 make_folders(path)
