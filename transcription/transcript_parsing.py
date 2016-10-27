@@ -1,4 +1,4 @@
-# transcription/transcript_parsing.py
+# transcription/transcript_pasing.py
 
 import os
 import shutil
@@ -10,19 +10,25 @@ output_file_time = 'only_timestamp.txt'
 # this is the folder you're keeping your source audio files in
 folder = 'mp3s'
 # this is the whole file path to the mp3 folder
-path = '/path/to/your/mp3s'
+#path = '/Volumes/LIBSTU/AlumniOralHistories/TEST'
+path = '/Users/loaner/transcriptinator/transcription/'
 
-
-def create_cues(root, beginning, ending, transcript_text):
+def create_cues(root, speaker, beginning, ending, transcript_text):
     cue = etree.SubElement(root, 'cue')
+    spkr = etree.SubElement(cue, 'speaker')
     start = etree.SubElement(cue, 'start')
     end = etree.SubElement(cue, 'end')
     transcript = etree.SubElement(cue, 'transcript')
-    speaker = etree.SubElement(cue, 'Different Speaker')
 
+    spkr.text = str(speaker)
     start.text = str(beginning)
     end.text = str(ending)
-    transcript.text = remove_numbers(transcript_text)
+   # t = remove_numbers(transcript_text)  # Removes occurences of word(x)
+    clean = transcript_text.replace("\xe2","'")  # Replaces character \xe2 with normal apostrophe
+    cleaner = clean.replace("(2)", "") # Removes (2) 's
+    cleanest = cleaner.replace("(3)", "") # Removes (3) 's
+    xmltext = re.sub(u"[^\x20-\x7f]+",u"",cleanest)  # Remove non-printable characters outside of given range
+    transcript.text = xmltext
 
 
 def create_root(in_file):
@@ -46,14 +52,31 @@ def iterator(in_file):
     root = etree.Element('cues')
     count = 0
     start_time = 0
-    # end_time = 0
+    end_time = 0
+    speaker = "something"
     # file_name = os.path.basename(in_file)
     beginsplit = os.path.splitext(in_file)[0]
     basefile = beginsplit.split('.')[0]
     out_file = basefile + '_transcript.xml'
     with open(in_file) as transcriptfile:
         for line in transcriptfile:
-            if line[0].isalpha():
+            #print(line)
+            #print(line[0])
+            if '<speaker>' in line:
+                split_vals = line.split(">")
+                spk = split_vals[1]
+                speaker = spk.replace("\n", "")
+                if end_time > 0.0:
+                    create_cues(
+                        root, speaker, start_time, end_time, " ".join(transcript_words))
+                    count = 0  # reset the count
+                test1 = False
+            else:
+                test1 = line[0].isalpha();
+                test2 = line[0].isdigit();
+                # print(line)
+
+            if test1 or test2:
                 # print(line)
                 split_vals = line.split()
                 # for the first word
@@ -64,22 +87,38 @@ def iterator(in_file):
                     start_time = (split_vals[1])
                     # save the first word to the list
                     transcript_words.append(split_vals[0])
-                    count += 1
-                # for the sixth word
-                elif count == 6:
+                    count += 1	
+                elif line == '<speaker>':
+                    # grab the stop time of the last word
+                    end_time = (split_vals[2])	
+                    # save the last word to the list
+                    transcript_words.append(split_vals[0])
+                    # assemble the cue	
+                    create_cues(
+                        root, speaker, start_time, end_time, " ".join(transcript_words))
+                # for the 120th word
+                elif count == 120:
                     # grab the stop time of the last word
                     end_time = (split_vals[2])
                     # save the last word to the list
                     transcript_words.append(split_vals[0])
                     # assemble the cue
                     create_cues(
-                        root, start_time, end_time, " ".join(transcript_words))
+                        root, speaker, start_time, end_time, " ".join(transcript_words))
                     count = 0  # reset the count
                 else:
                     # save the intervening words to the list
                     transcript_words.append(split_vals[0])
                     count += 1
 
+    # Once EOF is reached, create cue for the remaining part of transcription, even if it isn't 120 words long.
+    end_time = (split_vals[2])
+    # save the last word to the list
+    transcript_words.append(split_vals[0])
+    # assemble the cue
+    create_cues(
+        root, speaker, start_time, end_time, " ".join(transcript_words))
+               
     tree = etree.ElementTree(root)
     tree.write(out_file, pretty_print=True,
                xml_declaration=True, encoding='UTF-8')
@@ -127,8 +166,8 @@ def make_folders(path):
             file_names(derivs_folder)
 
 
-def remove_numbers(text_string):
-    return re.sub(r'\W\d+\W', '', text_string)
+# def remove_numbers(text_string):
+   # return re.sub(r'\W\d+\W', '', text_string)
 
 
 def scrape_text(in_file):
@@ -146,7 +185,9 @@ def scrape_timestamps(in_file):
     timestamp_lines = []
     with open(in_file, "r") as f:
         for line in f:
-            if any(char.isdigit() for char in line):
+            if '<speaker>' in line:
+                timestamp_lines.append(line)
+            elif any(char.isdigit() for char in line):
                 timestamp_lines.append(line)
     return timestamp_lines
 
