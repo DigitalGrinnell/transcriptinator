@@ -1,3 +1,8 @@
+## Digital Grinnell Specifics ##
+All data is stored in smb://Storage/LIBRARY/LIBSTU/AlumniOralHistories.  Processing should take place in subfolders at this location whenever possible.
+
+Note that a Digital Grinnell fork of Audiogrep is now available at [this link](https://github.com/DigitalGrinnell/audiogrep).
+
 ## Introduction ##
 This is a module that works with [audiogrep](https://github.com/antiboredom/audiogrep) to create timestamped transcripts of audio files. It is very experimental and in the early stages of development.
 
