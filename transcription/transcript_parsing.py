@@ -9,10 +9,11 @@ output_file_trns = 'only_transcript.txt'
 output_file_time = 'only_timestamp.txt'
 # this is the folder you're keeping your source audio files in
 folder = 'mp3s'
-# this is the whole file path to the mp3 folder
-# path = '/Volumes/LIBSTU/AlumniOralHistories/TEST'
-path = '/Users/loaner/transcriptinator/transcription/'
 
+# This is the whole file path to the mp3 folder
+# path = '/Volumes/LIBSTU/AlumniOralHistories/TEST'
+# path = '/Users/loaner/transcriptinator/transcription/'
+path ='.'
 
 def create_cues(root, speaker, beginning, ending, transcript_text):
     cue = etree.SubElement(root, 'cue')
@@ -68,17 +69,10 @@ def iterator(in_file):
                 spk = split_vals[1]
                 speaker = spk.replace("\n", "")
                 if end_time > 0.0:
-                    create_cues(
-                        root, speaker, start_time, end_time, " ".join(transcript_words))
+                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
                     count = 0  # reset the count
-                test1 = False
-            else:
-                test1 = line[0].isalpha();
-                test2 = line[0].isdigit();
-                # print(line)
-
-            if test1 or test2:
-                # print(line)
+                # test1 = False
+            elif (line[0].isalpha() or line[0].isdigit()):
                 # split_vals = line.split()
 
                 # Call our own function to parse the line.  If not as expected...continue to next line
@@ -99,10 +93,10 @@ def iterator(in_file):
                     # grab the stop time of the last word
                     end_time = split_vals[2]
                     # save the last word to the list
-                    transcript_words.append(split_vals[0])
+                    # transcript_words.append(split_vals[0])
                     # assemble the cue
-                    create_cues(
-                        root, speaker, start_time, end_time, " ".join(transcript_words))
+                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
+                    count = 0
                 # for the 120th word
                 elif count == 120:
                     # grab the stop time of the last word
@@ -110,8 +104,7 @@ def iterator(in_file):
                     # save the last word to the list
                     transcript_words.append(split_vals[0])
                     # assemble the cue
-                    create_cues(
-                        root, speaker, start_time, end_time, " ".join(transcript_words))
+                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
                     count = 0  # reset the count
                 else:
                     # save the intervening words to the list
@@ -123,12 +116,10 @@ def iterator(in_file):
     # save the last word to the list
     transcript_words.append(split_vals[0])
     # assemble the cue
-    create_cues(
-        root, speaker, start_time, end_time, " ".join(transcript_words))
+    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
 
     tree = etree.ElementTree(root)
-    tree.write(out_file, pretty_print=True,
-               xml_declaration=True, encoding='UTF-8')
+    tree.write(out_file, pretty_print=True, xml_declaration=True, encoding='UTF-8')
 
 
 def make_folders(path):
@@ -220,13 +211,12 @@ def store_xml(timestamps, out):
             f.write(timestamp_lines)
 
 
-# returns the first group in the regular expression
+# Returns the text portion of a 'this is text 1.234 2.345 0.123456' expression.
 def t_split(line):
-    pattern = r'([^|]+).\|.(\d+\.\d+).(\d+\.\d+).(0\.\d{6})'
+    pattern = r'(.+) ([0-9]+.[0-9]+) ([0-9]+.[0-9]+) (0.[0-9]+)'
     result = re.match(pattern, line)
     if (result):
-        return result.group()
-
+        return result.groups( )
 
 # main
 make_folders(path)
