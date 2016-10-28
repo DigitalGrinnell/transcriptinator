@@ -50,72 +50,74 @@ def file_names(folder):
                 iterator(input_file)
 
 
+# The iterator...where the rubber meets the road!
 def iterator(in_file):
     root = etree.Element('cues')
     count = 0
     start_time = 0
     end_time = 0
     speaker = "something"
+
     # file_name = os.path.basename(in_file)
+
     beginsplit = os.path.splitext(in_file)[0]
     basefile = beginsplit.split('.')[0]
     out_file = basefile + '_transcript.xml'
+
     with open(in_file) as transcriptfile:
+
         for line in transcriptfile:
-            # print(line)
-            # print(line[0])
+
+            # If we find a new <speaker> tab when count > 0 then we need to output the block.
             if '<speaker>' in line:
+                if count > 0:
+                    end_time = split_vals[2]
+                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
                 split_vals = line.split(">")
                 spk = split_vals[1]
                 speaker = spk.replace("\n", "")
-                if end_time > 0.0:
-                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
-                    count = 0  # reset the count
-                # test1 = False
-            elif (line[0].isalpha() or line[0].isdigit()):
-                # split_vals = line.split()
+                count = 0  # reset the count
 
+            # If the line begins with an alpha character or a digit...process it.
+            elif (line[0].isalpha() or line[0].isdigit()):
+
+                # split_vals = line.split()
                 # Call our own function to parse the line.  If not as expected...continue to next line
                 split_vals = t_split(line)
                 if not split_vals:
                     continue
 
-                # Found the first word
+                # Found a first word.  Reset the words array, add to it, and capture the start time.
                 if count == 0:
-                    # start a new list of words
+                    # Start a new list of words
                     transcript_words = []
-                    # grab the start time of the first word
+                    # Grab the start time of the first word
                     start_time = split_vals[1]
-                    # save the first word to the list
-                    transcript_words.append(split_vals[0])
-                    count += 1
-                elif line == '<speaker>':
-                    # grab the stop time of the last word
-                    end_time = split_vals[2]
-                    # save the last word to the list
-                    # transcript_words.append(split_vals[0])
-                    # assemble the cue
-                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
-                    count = 0
-                # for the 120th word
-                elif count == 120:
-                    # grab the stop time of the last word
-                    end_time = split_vals[2]
-                    # save the last word to the list
-                    transcript_words.append(split_vals[0])
-                    # assemble the cue
-                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
-                    count = 0  # reset the count
-                else:
-                    # save the intervening words to the list
+                    # Save the first word to the list
                     transcript_words.append(split_vals[0])
                     count += 1
 
-    # Once EOF is reached, create cue for the remaining part of transcription, even if it isn't 120 words long.
+                # Found the 120th word...output a cue.
+                elif count == 120:
+                    # Grab the stop time of the last word
+                    end_time = split_vals[2]
+                    # Save the last word to the list
+                    transcript_words.append(split_vals[0])
+                    # Assemble the cue
+                    create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
+                    count = 0  # reset the count
+
+                # Otherwise, seave the intervening words to the list
+                else:
+                    # Save the intervening words to the list
+                    transcript_words.append(split_vals[0])
+                    count += 1
+
+    # EOF is reached, create a cue for the remaining part of transcription, even if it isn't 120 words long.
     end_time = split_vals[2]
-    # save the last word to the list
+    # Save the last word to the list
     transcript_words.append(split_vals[0])
-    # assemble the cue
+    # Assemble the cue
     create_cues(root, speaker, start_time, end_time, " ".join(transcript_words))
 
     tree = etree.ElementTree(root)
@@ -177,7 +179,7 @@ def scrape_text(in_file):
     return transcript_lines
 
 
-# finds all the lines with timestamp info from an audiogrep output file,
+# Finds all the lines with timestamp info from an audiogrep output file,
 # and appends them into a list that gets returned
 def scrape_timestamps(in_file):
     timestamp_lines = []
@@ -190,21 +192,21 @@ def scrape_timestamps(in_file):
     return timestamp_lines
 
 
-# writes the text returned from scrape_text to a file
+# Writes the text returned from scrape_text to a file
 def store_text(transcript, out):
     with open(out, "w") as f:
         for transcript_lines in transcript:
             f.write(transcript_lines)
 
 
-# writes the timestamp lines returned from scrape_timestamps to a text file
+# Writes the timestamp lines returned from scrape_timestamps to a text file
 def store_timestamps(timestamps, out):
     with open(out, "w") as f:
         for timestamp_lines in timestamps:
             f.write(timestamp_lines)
 
 
-# writes the timestamp lines returned from scrape_timestamps to an xml file
+# Writes the timestamp lines returned from scrape_timestamps to an xml file
 def store_xml(timestamps, out):
     with open(out, "w") as f:
         for timestamp_lines in timestamps:
@@ -218,5 +220,5 @@ def t_split(line):
     if (result):
         return result.groups( )
 
-# main
+# Main
 make_folders(path)
