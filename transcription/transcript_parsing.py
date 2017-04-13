@@ -13,7 +13,7 @@ folder = 'mp3s'
 
 # This is the whole file path to the mp3 folder
 # path = '/Volumes/LIBSTU/AlumniOralHistories/TEST'
-# path = '/Users/loaner/transcriptinator/transcription/'
+# path = '/Users/libstu/Projects/transcriptinator/transcription/'
 path = sys.argv[1] # Set input file to a command-line argument
 
 def create_cues(root, speaker, beginning, ending, transcript_text):
@@ -59,20 +59,28 @@ def iterator(in_file):
     block_start = 0
     block_end = 0
     speaker = "something"
+    transcript_words = []
 
     # file_name = os.path.basename(in_file)
 
     beginsplit = os.path.splitext(in_file)[0]
     basefile = beginsplit.split('.')[0]
-    out_file = basefile + 'ready_for_editing_transcript.xml'
+    out_file = basefile + '_ready_for_editing_transcript.xml'
 
     with open(in_file) as transcriptfile:
+        linenumber = 0
 
         for line in transcriptfile:
+            linenumber += 1
+            print "read line number " + str(linenumber) + " in file " + in_file
+
+            if '[SPEECH]' in line or '[NOISE]' in line or '<sil>' in line:
+                continue
 
             # If we find a new <speaker> tab when count > 0 then we need to output the block.
-            if '<speaker>' in line:
+            elif '<speaker>' in line:
                 if count > 0:  # Test for anything in the buffer
+                   # if len(split_vals) > 2:
                     block_end = split_vals[2]
                     create_cues(root, speaker, block_start, block_end, " ".join(transcript_words))
                     count = 0 # Reset count
@@ -118,6 +126,7 @@ def iterator(in_file):
                     count += 1
 
     # EOF is reached, create a cue for the remaining part of transcription, even if it isn't 45 seconds long.
+   # if len(split_vals) > 2
     end_time = float(split_vals[2])
     # Assemble the cue
     create_cues(root, speaker, block_start, end_time, " ".join(transcript_words))
